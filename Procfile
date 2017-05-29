@@ -1,1 +1,1 @@
-worker: python __init__.py
+worker: python deploy.py
