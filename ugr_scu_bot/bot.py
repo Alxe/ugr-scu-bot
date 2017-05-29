@@ -5,6 +5,7 @@ from .constants import CHANNEL_ID
 from telegram.ext import Updater, Dispatcher, Job, JobQueue
 
 from datetime import datetime as dt
+from datetime import time
 
 class Bot:
     def __init__(self, token=None, channel_id=CHANNEL_ID):
@@ -32,7 +33,7 @@ class Bot:
                              parse_mode="Markdown")
 
     def run(self):
-        self._jobqueue.run_daily(self._daily_report, time=dt.now(), days=(0, 1, 2, 3, 4, 5))
+        self._jobqueue.run_daily(self._daily_report, time=time(hour=7, minute=30), days=(0, 1, 2, 3, 4, 5))
 
         self._updater.start_polling()
         self._updater.idle()
