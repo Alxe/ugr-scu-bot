@@ -1,24 +1,43 @@
-# -*- encoding: utf-8 -*-
+"""
+Scraper
+"""
 
-from bs4 import BeautifulSoup
 from urllib.request import urlopen
 
-from .constants import WEEKDAYS, WEEKDAY_DAYOFWEEK
+from bs4 import BeautifulSoup
 
-class Scraper:
+from ugr_scu_bot.constants import WEEKDAY_MAP
+
+
+class Scraper(object):
+    """
+    Scraper class
+    """
+
     def __init__(self):
         pass
-        
-    def _retrieve_scrap(self, url='http://scu.ugr.es/') -> BeautifulSoup:
+
+    def _retrieve_scrap(self, url='http://scu.ugr.es/'):
+        """
+        Internal method to retrieve the BeautifulSoup object
+        """
         with urlopen(url) as scrap:
             return BeautifulSoup(scrap, 'html.parser')
 
     def scrape_weekday(self, weekday):
+        """
+        Retrieve the plan for an specific day
+        """
         scrap = self.scrape()
+        day = WEEKDAY_MAP[weekday]
 
-        return scrap[WEEKDAY_DAYOFWEEK[weekday]]
+        return scrap[day]
 
     def scrape(self):
+        """
+        Retrieve the plan for the current week (data available on the website)
+        """
+
         scrap = self._retrieve_scrap()
 
         # Expected data value follows the format:
@@ -26,13 +45,13 @@ class Scraper:
         data = {}
 
         # Status tracking
-        current_day  = None
+        current_day = None
         current_menu = None
 
         # For each 'tr' tag in the table
         for row in scrap.table.find_all('tr'):
-            is_day_row   = False
-            is_menu_row  = False
+            is_day_row = False
+            is_menu_row = False
 
             # Workaround against non-valid rows
             if row is None or row.td is None:
@@ -42,13 +61,13 @@ class Scraper:
             first_col_text = first_col.get_text().strip().capitalize()
 
             # Check if current row is a 'day' row
-            for day in WEEKDAYS:
+            for day in WEEKDAY_MAP.values():
                 # If the day is contained in the text, we are in a day row
                 if day in first_col_text:
-                    current_day  = day
+                    current_day = day
                     current_menu = None
-                    is_day_row   = True
-                    is_menu_row  = False
+                    is_day_row = True
+                    is_menu_row = False
 
                     # As we've found a valid day, we exit the day-loop
                     break
@@ -62,11 +81,13 @@ class Scraper:
                 is_menu_row = ('Menú' in first_col_text)
 
                 if is_menu_row:
-                    # 'row' is expected to have one col, the name of the menu 
+                    # 'row' is expected to have one col, the name of the menu
                     current_menu = first_col_text.capitalize()
                 elif current_menu is None:
-                    current_menu = 'Menú'            
-                
+                    # In case no menu is set and it is not a menu row, use a default menu name
+                    current_menu = 'Menú'
+
+                # If it's not a menu row, try to parse data
                 if not is_menu_row:
                     if current_menu not in data[current_day]:
                         data[current_day][current_menu] = []
@@ -77,9 +98,12 @@ class Scraper:
                         cols[0].get_text().strip(), # type
                         cols[1].get_text().strip(), # name
                         cols[2].get_text().strip(), # allergens
-                            ))
-            
+                        ))
+
                     data[current_day][current_menu].append(item_tuple)
 
-            
         return data
+
+if __name__ == '__main__':
+    from datetime import date
+    print(Scraper().scrape_weekday(date.today().weekday()))
