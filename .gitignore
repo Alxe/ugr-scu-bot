@@ -1,2 +1,8 @@
+# Python cache
 *__pycache__*
+
+# Virtual enviorment
 venv/*
+
+# Visual Studio Code config
+.vscode/*

@@ -1,47 +1,34 @@
-"""
-Scraper
-"""
+"""Scraper"""
 
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
 
-from ugr_scu_bot.constants import WEEKDAY_MAP
-
+from const import WEEKDAY_MAP, SCU_URL
 
 class Scraper(object):
-    """
-    Scraper class
-    """
 
     def __init__(self):
+
         pass
 
-    def _retrieve_scrap(self, url='http://scu.ugr.es/'):
+    def _retrieve(self):
         """
-        Internal method to retrieve the BeautifulSoup object
-        """
-        with urlopen(url) as scrap:
-            return BeautifulSoup(scrap, 'html.parser')
-
-    def scrape_weekday(self, weekday):
-        """
-        Retrieve the plan for an specific day
-        """
-        scrap = self.scrape()
-        day = WEEKDAY_MAP[weekday]
-
-        return scrap[day]
-
-    def scrape(self):
-        """
-        Retrieve the plan for the current week (data available on the website)
+        Expected data value follows the format:
+        
+        { 
+          day : 
+          { 
+              menu : 
+              [
+                  (type, name, allergens)
+              ]
+          } 
+        }
         """
 
-        scrap = self._retrieve_scrap()
-
-        # Expected data value follows the format:
-        # { day : { menu : [(type, name, allergens)] } }
+        scrap = BeautifulSoup(urlopen(SCU_URL), 'html.parser')
+    
         data = {}
 
         # Status tracking
@@ -93,17 +80,21 @@ class Scraper(object):
                         data[current_day][current_menu] = []
 
                     cols = row.find_all('td')
-
-                    item_tuple = ((
-                        cols[0].get_text().strip(), # type
-                        cols[1].get_text().strip(), # name
-                        cols[2].get_text().strip(), # allergens
+                    
+                    if len(cols) == 3:
+                        item_tuple = ((
+                            cols[0].get_text().strip(), # type
+                            cols[1].get_text().strip(), # name
+                            cols[2].get_text().strip(), # allergens
                         ))
 
                     data[current_day][current_menu].append(item_tuple)
 
         return data
 
-if __name__ == '__main__':
-    from datetime import date
-    print(Scraper().scrape_weekday(date.today().weekday()))
+    def weekday(self, weekday):
+        
+        scrap = self._retrieve()
+        day = WEEKDAY_MAP[weekday]
+
+        return scrap[day]
